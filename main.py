@@ -25,6 +25,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap5(app)
 
+#Create Editor Form
+class EditForm(FlaskForm):
+    rating = StringField(label="rating", validators=[DataRequired()])
+    review = StringField(label="review", validators=[DataRequired()])
+    submit = SubmitField(label="submit")
+
+
 
 # CREATE DB
 class Base(DeclarativeBase):
@@ -83,8 +90,22 @@ def home():
     all_movies = Movie.query.all()
     return render_template("index.html", movies=all_movies)
 
-@app.route("/edit")
+@app.route("/edit", methods=["GET", "POST"])
 def edit():
+    form = EditForm()
+    movie_id = request.args.get("id")
+    movie = db.get_or_404(Movie, movie_id)
+    if form.validate_on_submit():
+        try:
+            movie.rating = float(form.rating.data)
+        except ValueError:
+            movie.rating = movie.rating
+        finally:
+            movie.review = form.review.data
+            db.session.commit()
+        return redirect(url_for("home"))
+    return render_template('edit.html', movie=movie, form=form)
+
     return render_template("edit.html")
 
 if __name__ == '__main__':
